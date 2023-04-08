@@ -4,30 +4,60 @@ import fs from "fs";
 
 const a = axios.create({});
 
-let rawdata = fs.readFileSync("usedInns.json");
-let is = JSON.parse(rawdata);
-console.log(is);
+// let rawdata = fs.readFileSync("usedInns.json");
+let is = [];
 
 let curIdx = -1;
 const dIs = inns.filter((inn) => !is.includes(inn));
 
 function getInn() {
   curIdx += 1;
-  if (curIdx < 100) return dIs[curIdx];
+  return dIs[curIdx];
 }
 
 let responses: any[] = [];
 let usedInns: any[] = [];
 
-async function push(res, inn) {}
+async function push(inn, res) {
+  usedInns.push(inn);
+  if (res) {
+    responses.push(res);
+  }
+
+  if (usedInns.length % 10 && usedInns.length) {
+    return;
+  }
+
+  // stringify JSON Object
+  var jsonContent = JSON.stringify(responses);
+  var jsonInns = JSON.stringify(usedInns);
+
+  fs.writeFile("output.json", jsonContent, "utf8", function (err) {
+    if (err) {
+      console.log("An error occured while writing JSON Object to File.");
+      return console.log(err);
+    }
+
+    console.log("JSON file has been saved.");
+  });
+
+  fs.writeFile("usedInns.json", jsonInns, "utf8", function (err) {
+    if (err) {
+      console.log("An error occured while writing JSON Object to File.");
+      return console.log(err);
+    }
+
+    console.log("JSON file has been saved.");
+  });
+}
 
 (async () => {
   await Promise.all(
     Array(4)
       .fill(null)
-      .map(async () => {
-        let qratorMsid =
-          "1680910336.353.8mIWQwZt5CP6ZqHY-oufusi63tua5oubvcehp9vba1loui6tj";
+      .map(async (_, idx) => {
+        await new Promise((r) => setTimeout(r, idx * 1000));
+        let qratorMsid = "";
 
         while (true) {
           const inn = getInn();
@@ -61,11 +91,7 @@ async function push(res, inn) {}
             })
             .then((response) => {
               const r = response.data.pageData?.[0];
-              console.log(!!r);
-              if (r) {
-                responses.push(r);
-              }
-              usedInns.push(inn);
+              push(inn, r);
             })
             .catch((response) => {
               console.log("error");
@@ -79,28 +105,6 @@ async function push(res, inn) {}
         }
       })
   );
-
-  // stringify JSON Object
-  var jsonContent = JSON.stringify(responses);
-  var jsonInns = JSON.stringify(usedInns);
-
-  fs.writeFile("output.json", jsonContent, "utf8", function (err) {
-    if (err) {
-      console.log("An error occured while writing JSON Object to File.");
-      return console.log(err);
-    }
-
-    console.log("JSON file has been saved.");
-  });
-
-  fs.writeFile("usedInns.json", jsonInns, "utf8", function (err) {
-    if (err) {
-      console.log("An error occured while writing JSON Object to File.");
-      return console.log(err);
-    }
-
-    console.log("JSON file has been saved.");
-  });
 })();
 
 // import csvToJson from "convert-csv-to-json";
